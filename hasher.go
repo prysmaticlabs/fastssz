@@ -280,9 +280,9 @@ func (h *Hasher) Merkleize(indx int) {
 
 	// input = h.merkleizeImpl(input[:0], input, 0)
 
-	/*for i, j := indx, 0; j < len(digest); i, j = i+32, j+1 {
+	for i, j := indx, 0; j < len(digest); i, j = i+32, j+1 {
 		h.buf = append(h.buf[:i], digest[j][:]...)
-	}*/
+	}
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
