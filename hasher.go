@@ -270,13 +270,12 @@ func (h *Hasher) Merkleize(indx int) {
 	chunks := make([][32]byte, twoToPower)
 	for len(chunks) > 1 {
 		digest := make([][32]byte, len(chunks)/2)
-		for i := 0; i < len(chunks); i++ {
+		for i, j := indx, 0; j < len(chunks); i, j = i+32, j+1 {
 			var b [32]byte
 			if i == len(chunks)-1 {
 				copy(b[:], h.buf[indx:])
 			} else {
-				copy(b[:], h.buf[indx:indx+32])
-				indx += 32
+				copy(b[:], h.buf[i:i+32])
 			}
 			chunks[i] = b
 		}
