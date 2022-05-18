@@ -272,12 +272,12 @@ func (h *Hasher) Merkleize(indx int) {
 		digest := make([][32]byte, len(chunks)/2)
 		for i, j := indx, 0; j < len(chunks); i, j = i+32, j+1 {
 			var b [32]byte
-			if i == len(chunks)-1 {
-				copy(b[:], h.buf[indx:])
+			if j == len(chunks)-1 {
+				copy(b[:], h.buf[i:])
 			} else {
 				copy(b[:], h.buf[i:i+32])
 			}
-			chunks[i] = b
+			chunks[j] = b
 		}
 		if err := gohashtree.Hash(digest, chunks); err != nil {
 			panic(err)
