@@ -260,11 +260,8 @@ func (h *Hasher) Index() int {
 // Merkleize is used to merkleize the last group of the hasher
 func (h *Hasher) Merkleize(indx int) {
 	input := h.buf[indx:]
-
-	// merkleize the input
-	inputLen := len(input)
-
 	// TODO: What if inputLen = 0 or inputLen = 1?
+	inputLen := len(input)
 	twoToPower := 1
 	for twoToPower < inputLen {
 		twoToPower *= 2
@@ -279,6 +276,7 @@ func (h *Hasher) Merkleize(indx int) {
 				copy(b[:], h.buf[indx:])
 			} else {
 				copy(b[:], h.buf[indx:indx+32])
+				indx += 32
 			}
 			chunks[i] = b
 		}
