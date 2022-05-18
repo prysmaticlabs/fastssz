@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash"
-	"math"
 	"math/bits"
 	"sync"
 
@@ -263,26 +262,32 @@ func (h *Hasher) Merkleize(indx int) {
 	input := h.buf[indx:]
 
 	// merkleize the input
-	chunks := make([][32]byte, len(input)/32+int(math.Min(1, float64(len(input)%32))))
-	for i := 0; i < len(chunks); i++ {
-		var b [32]byte
-		if i == len(chunks)-1 {
-			copy(b[:], h.buf[indx:])
-		} else {
-			copy(b[:], h.buf[indx:indx+32])
+	inputLen := len(input)
+
+	// TODO: What if inputLen = 0 or inputLen = 1?
+	twoToPower := 1
+	for twoToPower < inputLen {
+		twoToPower *= 2
+	}
+
+	chunks := make([][32]byte, twoToPower)
+	for len(chunks) > 1 {
+		digest := make([][32]byte, len(chunks)/2)
+		for i := 0; i < len(chunks); i++ {
+			var b [32]byte
+			if i == len(chunks)-1 {
+				copy(b[:], h.buf[indx:])
+			} else {
+				copy(b[:], h.buf[indx:indx+32])
+			}
+			chunks[i] = b
 		}
-		chunks[i] = b
+		if err := gohashtree.Hash(digest, chunks); err != nil {
+			panic(err)
+		}
+		chunks = digest
 	}
-	digest := make([][32]byte, len(chunks)/2+len(chunks)%2)
-	if err := gohashtree.Hash(digest, chunks); err != nil {
-		panic(err)
-	}
-
-	// input = h.merkleizeImpl(input[:0], input, 0)
-
-	for i, j := indx, 0; j < len(digest); i, j = i+32, j+1 {
-		h.buf = append(h.buf[:i], digest[j][:]...)
-	}
+	h.buf = append(h.buf[:indx], chunks[0][:]...)
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
