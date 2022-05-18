@@ -4,10 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash"
+	"math"
 	"math/bits"
 	"sync"
 
 	"github.com/minio/sha256-simd"
+	"github.com/prysmaticlabs/gohashtree"
 )
 
 var (
@@ -258,8 +260,7 @@ func (h *Hasher) Index() int {
 
 // Merkleize is used to merkleize the last group of the hasher
 func (h *Hasher) Merkleize(indx int) {
-	panic("dupa")
-	/*input := h.buf[indx:]
+	input := h.buf[indx:]
 
 	// merkleize the input
 	chunks := make([][32]byte, len(input)/32+int(math.Min(1, float64(len(input)%32))))
@@ -275,7 +276,7 @@ func (h *Hasher) Merkleize(indx int) {
 	digest := make([][32]byte, len(chunks)/2+len(chunks)%2)
 	if err := gohashtree.Hash(digest, chunks); err != nil {
 		panic(err)
-	}*/
+	}
 
 	// input = h.merkleizeImpl(input[:0], input, 0)
 
