@@ -259,30 +259,26 @@ func (h *Hasher) Index() int {
 
 // Merkleize is used to merkleize the last group of the hasher
 func (h *Hasher) Merkleize(indx int) {
-	input := h.buf[indx:]
 	// TODO: What if inputLen = 0 or inputLen = 1?
-	inputLen := len(input)
+	inputLen := len(h.buf[indx:])
 	twoToPower := 1
 	for twoToPower < inputLen {
 		twoToPower *= 2
 	}
 
 	chunks := make([][32]byte, twoToPower/32)
-	for len(chunks) > 1 {
-		digest := make([][32]byte, len(chunks)/2)
-		for i, j := indx, 0; j < len(chunks); i, j = i+32, j+1 {
-			var b [32]byte
-			if j == len(chunks)-1 {
-				copy(b[:], h.buf[i:])
-			} else {
-				copy(b[:], h.buf[i:i+32])
-			}
-			chunks[j] = b
-		}
-		if err := gohashtree.Hash(digest, chunks); err != nil {
+	paddedInput := make([]byte, twoToPower)
+	copy(paddedInput[:inputLen], h.buf[indx:])
+	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
+		copy(chunks[j][:], paddedInput[i:i+32])
+	}
+
+	counter := twoToPower / 32
+	for counter > 1 {
+		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
 			panic(err)
 		}
-		chunks = digest
+		counter /= 2
 	}
 	h.buf = append(h.buf[:indx], chunks[0][:]...)
 }
