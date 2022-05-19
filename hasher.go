@@ -304,8 +304,12 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		return
 	}
 
+	if inputLen > limit {
+		inputLen = limit
+	}
+
 	twoToPower := uint64(1)
-	for twoToPower < inputLen && twoToPower < limit {
+	for twoToPower < inputLen {
 		twoToPower *= 2
 	}
 
