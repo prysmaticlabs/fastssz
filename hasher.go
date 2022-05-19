@@ -291,7 +291,15 @@ func (h *Hasher) Merkleize(indx int) {
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	inputLen := len(h.buf[indx:])
 	if inputLen == 0 {
-		h.buf = append(h.buf[:indx], zeroBytes...)
+		// mixin with the size
+		output := h.tmp[:32]
+		for indx := range output {
+			output[indx] = 0
+		}
+		MarshalUint64(output[:0], num)
+
+		input := h.doHash(zeroBytes, zeroBytes, output)
+		h.buf = append(h.buf[:indx], input...)
 		return
 	}
 
