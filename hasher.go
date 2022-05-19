@@ -267,7 +267,7 @@ func (h *Hasher) Merkleize(indx int) {
 		twoToPower *= 2
 	}
 
-	chunks := make([][32]byte, twoToPower)
+	chunks := make([][32]byte, twoToPower/32)
 	for len(chunks) > 1 {
 		digest := make([][32]byte, len(chunks)/2)
 		for i, j := indx, 0; j < len(chunks); i, j = i+32, j+1 {
