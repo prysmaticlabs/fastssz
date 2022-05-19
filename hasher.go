@@ -289,6 +289,7 @@ func (h *Hasher) Merkleize(indx int) {
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
+	input := h.buf[indx:]
 	inputLen := uint64(len(h.buf[indx:]))
 	if inputLen == 0 {
 		// mixin with the size
@@ -298,7 +299,7 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		}
 		MarshalUint64(output[:0], num)
 
-		input := h.doHash(zeroBytes, zeroBytes, output)
+		input = h.doHash(input, zeroBytes, output)
 		h.buf = append(h.buf[:indx], input...)
 		return
 	}
@@ -325,12 +326,12 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 
 	// mixin with the size
 	output := h.tmp[:32]
-	for indx := range output {
-		output[indx] = 0
+	for o := range output {
+		output[o] = 0
 	}
 	MarshalUint64(output[:0], num)
 
-	input := h.doHash(chunks[0][:], chunks[0][:], output)
+	input = h.doHash(chunks[0][:], chunks[0][:], output)
 	h.buf = append(h.buf[:indx], input...)
 }
 
