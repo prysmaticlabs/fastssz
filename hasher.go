@@ -289,7 +289,7 @@ func (h *Hasher) Merkleize(indx int) {
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
-	inputLen := len(h.buf[indx:])
+	inputLen := uint64(len(h.buf[indx:]))
 	if inputLen == 0 {
 		// mixin with the size
 		output := h.tmp[:32]
@@ -303,8 +303,8 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		return
 	}
 
-	twoToPower := 1
-	for twoToPower < inputLen {
+	twoToPower := uint64(1)
+	for twoToPower < inputLen && twoToPower < limit {
 		twoToPower *= 2
 	}
 
