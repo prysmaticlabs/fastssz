@@ -290,7 +290,7 @@ func (h *Hasher) Merkleize(indx int) {
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	inputLen := len(h.buf[indx:])
 	if inputLen == 0 {
-		panic("empty input")
+		return
 	}
 
 	twoToPower := 1
