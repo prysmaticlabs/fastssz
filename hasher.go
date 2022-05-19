@@ -259,8 +259,11 @@ func (h *Hasher) Index() int {
 
 // Merkleize is used to merkleize the last group of the hasher
 func (h *Hasher) Merkleize(indx int) {
-	// TODO: What if inputLen = 0 or inputLen = 1?
 	inputLen := len(h.buf[indx:])
+	if inputLen == 0 {
+		panic("empty input")
+	}
+
 	twoToPower := 1
 	for twoToPower < inputLen {
 		twoToPower *= 2
@@ -285,10 +288,30 @@ func (h *Hasher) Merkleize(indx int) {
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
-	input := h.buf[indx:]
+	inputLen := len(h.buf[indx:])
+	if inputLen == 0 {
+		panic("empty input")
+	}
 
-	// merkleize the input
-	input = h.merkleizeImpl(input[:0], input, limit)
+	twoToPower := 1
+	for twoToPower < inputLen {
+		twoToPower *= 2
+	}
+
+	chunks := make([][32]byte, twoToPower/32)
+	paddedInput := make([]byte, twoToPower)
+	copy(paddedInput[:inputLen], h.buf[indx:])
+	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
+		copy(chunks[j][:], paddedInput[i:i+32])
+	}
+
+	counter := twoToPower / 32
+	for counter > 1 {
+		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
+			panic(err)
+		}
+		counter /= 2
+	}
 
 	// mixin with the size
 	output := h.tmp[:32]
@@ -297,7 +320,7 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	}
 	MarshalUint64(output[:0], num)
 
-	input = h.doHash(input, input, output)
+	input := h.doHash(chunks[0][:], chunks[0][:], output)
 	h.buf = append(h.buf[:indx], input...)
 }
 
