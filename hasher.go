@@ -261,7 +261,8 @@ func (h *Hasher) Index() int {
 func (h *Hasher) Merkleize(indx int) {
 	inputLen := len(h.buf[indx:])
 	if inputLen == 0 {
-		panic("empty input")
+		h.buf = append(h.buf[:indx], zeroBytes...)
+		return
 	}
 
 	twoToPower := 1
@@ -290,6 +291,7 @@ func (h *Hasher) Merkleize(indx int) {
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	inputLen := len(h.buf[indx:])
 	if inputLen == 0 {
+		h.buf = append(h.buf[:indx], zeroBytes...)
 		return
 	}
 
