@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash"
+	"math"
 	"math/bits"
 	"sync"
 
@@ -270,8 +271,8 @@ func (h *Hasher) Merkleize(indx int) {
 		twoToPower *= 2
 	}
 
-	chunks := make([][32]byte, twoToPower/32)
-	paddedInput := make([]byte, twoToPower)
+	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
+	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
 	copy(paddedInput[:inputLen], h.buf[indx:])
 	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
 		copy(chunks[j][:], paddedInput[i:i+32])
@@ -313,8 +314,8 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		twoToPower *= 2
 	}
 
-	chunks := make([][32]byte, twoToPower/32)
-	paddedInput := make([]byte, twoToPower)
+	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
+	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
 	copy(paddedInput[:inputLen], h.buf[indx:])
 	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
 		copy(chunks[j][:], paddedInput[i:i+32])
