@@ -293,8 +293,8 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	if inputLen == 0 {
 		// mixin with the size
 		output := h.tmp[:32]
-		for indx := range output {
-			output[indx] = 0
+		for o := range output {
+			output[o] = 0
 		}
 		MarshalUint64(output[:0], num)
 
