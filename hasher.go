@@ -291,52 +291,18 @@ func (h *Hasher) Merkleize(indx int) {
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	input := h.buf[indx:]
-	inputLen := uint64(len(h.buf[indx:]))
-	if inputLen == 0 {
-		// mixin with the size
-		output := h.tmp[:32]
-		for o := range output {
-			output[o] = 0
-		}
-		MarshalUint64(output[:0], num)
 
-		input = h.doHash(input, zeroBytes, output)
-		h.buf = append(h.buf[:indx], input...)
-		return
-	}
-
-	if inputLen > limit {
-		inputLen = limit
-	}
-
-	twoToPower := uint64(1)
-	for twoToPower < inputLen {
-		twoToPower *= 2
-	}
-
-	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
-	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
-	copy(paddedInput[:inputLen], h.buf[indx:])
-	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
-		copy(chunks[j][:], paddedInput[i:i+32])
-	}
-
-	counter := twoToPower / 32
-	for counter > 1 {
-		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
-			panic(err)
-		}
-		counter /= 2
-	}
+	// merkleize the input
+	input = h.merkleizeImpl(input[:0], input, limit)
 
 	// mixin with the size
 	output := h.tmp[:32]
-	for o := range output {
-		output[o] = 0
+	for indx := range output {
+		output[indx] = 0
 	}
 	MarshalUint64(output[:0], num)
 
-	input = h.doHash(chunks[0][:], chunks[0][:], output)
+	input = h.doHash(input, input, output)
 	h.buf = append(h.buf[:indx], input...)
 }
 
