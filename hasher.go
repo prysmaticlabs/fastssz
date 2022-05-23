@@ -286,11 +286,11 @@ func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
 }
 
 // MerkleizeGoHashTree merkleizes hasher's buffered data using the gohashtree library.
-func (h *Hasher) Merkleize(ix int) error {
+func (h *Hasher) Merkleize(ix int) {
 	inputLen := len(h.buf[ix:])
 	if inputLen == 0 {
 		h.buf = append(h.buf[:ix], zeroBytes...)
-		return nil
+		return
 	}
 
 	// calculate the nearest power of 2 not smaller than inputLen
@@ -301,14 +301,14 @@ func (h *Hasher) Merkleize(ix int) error {
 
 	result, err := h.calculateHash(ix, uint64(twoToPower))
 	if err != nil {
-		return err
+		panic(err)
 	}
 	h.buf = append(h.buf[:ix], result[:]...)
-	return nil
+	return
 }
 
 // MerkleizeWithMixinGoHashTree merkleizes hasher's buffered data using the gohashtree library.
-func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
+func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) {
 	inputLen := uint64(len(h.buf[ix:]))
 	if inputLen == 0 {
 		// calculate the nearest power of 2 not smaller than limit
@@ -322,6 +322,7 @@ func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
 
 		// since data is all zeros, we can fetch
 		// a precomputed hash instead of recalculating it
+		// zeroHashes[x] contains a hash of 2^x [32]byte values with all zeroes
 		inputHash := zeroHashes[counter]
 
 		// mix in with the size
@@ -333,7 +334,7 @@ func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
 		h.doHash(inputHash[:], inputHash[:], output)
 		h.buf = append(h.buf[:ix], inputHash[:]...)
 
-		return nil
+		return
 	}
 
 	// calculate the nearest power of 2 not smaller than inputLen nor limit
@@ -345,7 +346,7 @@ func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
 
 	result, err := h.calculateHash(ix, twoToPower)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	// mix in with the size
@@ -357,7 +358,7 @@ func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
 	h.doHash(result[:], result[:], output)
 	h.buf = append(h.buf[:ix], result[:]...)
 
-	return nil
+	return
 }
 
 // HashRoot creates the hash final hash root
