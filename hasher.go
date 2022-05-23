@@ -330,29 +330,14 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		return
 	}
 
-	input := h.buf[indx:]
-
-	// merkleize the input
-	input = h.merkleizeImpl(input[:0], input, limit)
-
-	// mixin with the size
-	output := h.tmp[:32]
-	for indx := range output {
-		output[indx] = 0
-	}
-	MarshalUint64(output[:0], num)
-
-	input = h.doHash(input, input, output)
-	h.buf = append(h.buf[:indx], input...)
-
-	/*twoToPower := uint64(1)
-	for twoToPower < inputLen && twoToPower < limit {
+	twoToPower := uint64(1)
+	for twoToPower < inputLen || twoToPower < limit*32 {
 		twoToPower *= 2
 	}
 
 	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
 	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
-	copy(paddedInput[:limit], h.buf[indx:uint64(indx)+limit])
+	copy(paddedInput[:inputLen], h.buf[indx:])
 	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
 		copy(chunks[j][:], paddedInput[i:i+32])
 	}
@@ -373,7 +358,7 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	MarshalUint64(output[:0], num)
 
 	h.doHash(chunks[0][:], chunks[0][:], output)
-	h.buf = append(h.buf[:indx], chunks[0][:]...)*/
+	h.buf = append(h.buf[:indx], chunks[0][:]...)
 }
 
 // HashRoot creates the hash final hash root
