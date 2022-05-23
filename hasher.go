@@ -259,37 +259,16 @@ func (h *Hasher) Index() int {
 }
 
 // Merkleize is used to merkleize the last group of the hasher
-func (h *Hasher) Merkleize(indx int) {
-	inputLen := len(h.buf[indx:])
-	if inputLen == 0 {
-		h.buf = append(h.buf[:indx], zeroBytes...)
-		return
-	}
+func (h *Hasher) Merkleize2(indx int) {
+	input := h.buf[indx:]
 
-	twoToPower := 1
-	for twoToPower < inputLen {
-		twoToPower *= 2
-	}
-
-	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
-	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
-	copy(paddedInput[:inputLen], h.buf[indx:])
-	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
-		copy(chunks[j][:], paddedInput[i:i+32])
-	}
-
-	counter := twoToPower / 32
-	for counter > 1 {
-		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
-			panic(err)
-		}
-		counter /= 2
-	}
-	h.buf = append(h.buf[:indx], chunks[0][:]...)
+	// merkleize the input
+	input = h.merkleizeImpl(input[:0], input, 0)
+	h.buf = append(h.buf[:indx], input...)
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
-func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
+func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
 	input := h.buf[indx:]
 
 	// merkleize the input
@@ -306,9 +285,34 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	h.buf = append(h.buf[:indx], input...)
 }
 
-func (h *Hasher) MerkleizeWithMixinGoHashTree(indx int, num, limit uint64) error {
-	inputLen := uint64(len(h.buf[indx:]))
+// MerkleizeGoHashTree merkleizes hasher's buffered data using the gohashtree library.
+func (h *Hasher) Merkleize(ix int) error {
+	inputLen := len(h.buf[ix:])
 	if inputLen == 0 {
+		h.buf = append(h.buf[:ix], zeroBytes...)
+		return nil
+	}
+
+	// calculate the nearest power of 2 not smaller than inputLen
+	twoToPower := 1
+	for twoToPower < inputLen {
+		twoToPower *= 2
+	}
+
+	result, err := h.calculateHash(ix, uint64(twoToPower))
+	if err != nil {
+		return err
+	}
+	h.buf = append(h.buf[:ix], result[:]...)
+	return nil
+}
+
+// MerkleizeWithMixinGoHashTree merkleizes hasher's buffered data using the gohashtree library.
+func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) error {
+	inputLen := uint64(len(h.buf[ix:]))
+	if inputLen == 0 {
+		// calculate the nearest power of 2 not smaller than limit
+		// limit is the exact number of 32-byte elements that need to be hashed
 		counter := 0
 		twoToPower := uint64(1)
 		for twoToPower < limit {
@@ -316,6 +320,8 @@ func (h *Hasher) MerkleizeWithMixinGoHashTree(indx int, num, limit uint64) error
 			counter++
 		}
 
+		// since data is all zeros, we can fetch
+		// a precomputed hash instead of recalculating it
 		inputHash := zeroHashes[counter]
 
 		// mix in with the size
@@ -325,29 +331,21 @@ func (h *Hasher) MerkleizeWithMixinGoHashTree(indx int, num, limit uint64) error
 		}
 		MarshalUint64(output[:0], num)
 		h.doHash(inputHash[:], inputHash[:], output)
-		h.buf = append(h.buf[:indx], inputHash[:]...)
+		h.buf = append(h.buf[:ix], inputHash[:]...)
 
 		return nil
 	}
 
+	// calculate the nearest power of 2 not smaller than inputLen nor limit
+	// limit is the exact number of 32-byte elements that need to be hashed
 	twoToPower := uint64(1)
 	for twoToPower < inputLen || twoToPower < limit*32 {
 		twoToPower *= 2
 	}
 
-	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
-	paddedInput := make([]byte, int(math.Max(32, float64(twoToPower))))
-	copy(paddedInput[:inputLen], h.buf[indx:])
-	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
-		copy(chunks[j][:], paddedInput[i:i+32])
-	}
-
-	counter := twoToPower / 32
-	for counter > 1 {
-		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
-			return err
-		}
-		counter /= 2
+	result, err := h.calculateHash(ix, twoToPower)
+	if err != nil {
+		return err
 	}
 
 	// mix in with the size
@@ -356,9 +354,8 @@ func (h *Hasher) MerkleizeWithMixinGoHashTree(indx int, num, limit uint64) error
 		output[o] = 0
 	}
 	MarshalUint64(output[:0], num)
-
-	h.doHash(chunks[0][:], chunks[0][:], output)
-	h.buf = append(h.buf[:indx], chunks[0][:]...)
+	h.doHash(result[:], result[:], output)
+	h.buf = append(h.buf[:ix], result[:]...)
 
 	return nil
 }
@@ -493,4 +490,25 @@ func (h *Hasher) merkleizeImpl(dst []byte, input []byte, limit uint64) []byte {
 		res = h.doHash(res, res, zeroHashes[j][:])[:32]
 	}
 	return append(dst, res...)
+}
+
+func (h *Hasher) calculateHash(ix int, twoToPower uint64) ([32]byte, error) {
+	// we must have at least one chunk
+	chunks := make([][32]byte, int(math.Max(1, float64(twoToPower/32))))
+
+	paddedInput := make([]byte, len(chunks)*32)
+	copy(paddedInput, h.buf[ix:])
+	for i, j := 0, 0; j < len(chunks); i, j = i+32, j+1 {
+		copy(chunks[j][:], paddedInput[i:i+32])
+	}
+
+	counter := twoToPower / 32
+	for counter > 1 {
+		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
+			return [32]byte{}, err
+		}
+		counter /= 2
+	}
+
+	return chunks[0], nil
 }
