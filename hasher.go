@@ -259,7 +259,7 @@ func (h *Hasher) Index() int {
 }
 
 // Merkleize is used to merkleize the last group of the hasher
-func (h *Hasher) Merkleize2(indx int) {
+func (h *Hasher) Merkleize(indx int) {
 	input := h.buf[indx:]
 
 	// merkleize the input
@@ -268,7 +268,7 @@ func (h *Hasher) Merkleize2(indx int) {
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
-func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
+func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	input := h.buf[indx:]
 
 	// merkleize the input
@@ -286,7 +286,7 @@ func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
 }
 
 // MerkleizeGoHashTree merkleizes hasher's buffered data using the gohashtree library.
-func (h *Hasher) Merkleize(ix int) {
+func (h *Hasher) MerkleizeGoHashTree(ix int) {
 	inputLen := len(h.buf[ix:])
 	if inputLen == 0 {
 		h.buf = append(h.buf[:ix], zeroBytes...)
@@ -308,7 +308,7 @@ func (h *Hasher) Merkleize(ix int) {
 }
 
 // MerkleizeWithMixinGoHashTree merkleizes hasher's buffered data using the gohashtree library.
-func (h *Hasher) MerkleizeWithMixin(ix int, num, limit uint64) {
+func (h *Hasher) MerkleizeWithMixinGoHashTree(ix int, num, limit uint64) {
 	inputLen := uint64(len(h.buf[ix:]))
 	if inputLen == 0 {
 		// calculate the nearest power of 2 not smaller than limit
