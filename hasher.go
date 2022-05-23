@@ -309,22 +309,14 @@ func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
 func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	inputLen := uint64(len(h.buf[indx:]))
 	if inputLen == 0 {
+		counter := 0
 		twoToPower := uint64(1)
 		for twoToPower < limit {
 			twoToPower *= 2
+			counter++
 		}
 
-		chunks := make([][32]byte, int(math.Max(1, float64(twoToPower))))
-		for i := range chunks {
-			chunks[i] = [32]byte{}
-		}
-		counter := twoToPower
-		for counter > 1 {
-			if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
-				panic(err)
-			}
-			counter /= 2
-		}
+		inputHash := zeroHashes[counter]
 
 		// mix in with the size
 		output := h.tmp[:32]
@@ -332,8 +324,8 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 			output[o] = 0
 		}
 		MarshalUint64(output[:0], num)
-		h.doHash(chunks[0][:], chunks[0][:], output)
-		h.buf = append(h.buf[:indx], chunks[0][:]...)
+		h.doHash(inputHash[:], inputHash[:], output)
+		h.buf = append(h.buf[:indx], inputHash[:]...)
 
 		return
 	}
