@@ -289,7 +289,7 @@ func (h *Hasher) Merkleize(indx int) {
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
-func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
+func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	input := h.buf[indx:]
 
 	// merkleize the input
@@ -306,7 +306,7 @@ func (h *Hasher) MerkleizeWithMixin2(indx int, num, limit uint64) {
 	h.buf = append(h.buf[:indx], input...)
 }
 
-func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
+func (h *Hasher) MerkleizeWithMixinGoHashTree(indx int, num, limit uint64) error {
 	inputLen := uint64(len(h.buf[indx:]))
 	if inputLen == 0 {
 		counter := 0
@@ -327,7 +327,7 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		h.doHash(inputHash[:], inputHash[:], output)
 		h.buf = append(h.buf[:indx], inputHash[:]...)
 
-		return
+		return nil
 	}
 
 	twoToPower := uint64(1)
@@ -345,12 +345,12 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 	counter := twoToPower / 32
 	for counter > 1 {
 		if err := gohashtree.Hash(chunks[:counter/2], chunks[:counter]); err != nil {
-			panic(err)
+			return err
 		}
 		counter /= 2
 	}
 
-	// mixin with the size
+	// mix in with the size
 	output := h.tmp[:32]
 	for o := range output {
 		output[o] = 0
@@ -359,6 +359,8 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 
 	h.doHash(chunks[0][:], chunks[0][:], output)
 	h.buf = append(h.buf[:indx], chunks[0][:]...)
+
+	return nil
 }
 
 // HashRoot creates the hash final hash root
