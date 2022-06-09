@@ -8,19 +8,23 @@ import (
 
 // MarshalSSZ marshals an object
 func MarshalSSZ(m Marshaler) ([]byte, error) {
-	buf := make([]byte, m.SizeSSZ())
+	size, err := m.SizeSSZ()
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, size)
 	return m.MarshalSSZTo(buf[:0])
 }
 
 // Errors
 
 var (
-	ErrOffset       = fmt.Errorf("incorrect offset")
-	ErrSize         = fmt.Errorf("incorrect size")
-	ErrBytesLength  = fmt.Errorf("bytes array does not have the correct length")
-	ErrVectorLength = fmt.Errorf("vector does not have the correct length")
-	ErrListTooBig   = fmt.Errorf("list length is higher than max value")
-	ErrEmptyBitlist = fmt.Errorf("bitlist is empty")
+	ErrOffset                = fmt.Errorf("incorrect offset")
+	ErrSize                  = fmt.Errorf("incorrect size")
+	ErrBytesLength           = fmt.Errorf("bytes array does not have the correct length")
+	ErrVectorLength          = fmt.Errorf("vector does not have the correct length")
+	ErrListTooBig            = fmt.Errorf("list length is higher than max value")
+	ErrEmptyBitlist          = fmt.Errorf("bitlist is empty")
 	ErrInvalidVariableOffset = fmt.Errorf("invalid ssz encoding. first variable element offset indexes into fixed value data")
 )
 
