@@ -24,7 +24,7 @@ func (e *env) size(name string, v *Value) string {
 	str := execTmpl(tmpl, map[string]interface{}{
 		"name":    name,
 		"fixed":   v.fixedSize(),
-		"dynamic": v.sizeContainer("size", true),
+		"dynamic": v.sizeContainer("size", true, "0"),
 	})
 	return appendObjSignature(str, v)
 }
@@ -59,17 +59,17 @@ func (v *Value) fixedSize() uint64 {
 	}
 }
 
-func (v *Value) sizeContainer(name string, start bool) string {
+func (v *Value) sizeContainer(name string, start bool, defaultValue string) string {
 	if !start {
 		tmpl := `{{if .check}} if ::.{{.name}} == nil {
 			::.{{.name}} = new({{.obj}})
 		}
 		{{end}}
-		size, err := ::.{{.name}}.SizeSSZ()
+		sszSize, err := ::.{{.name}}.SizeSSZ()
 		if err != nil {
-			return nil, err
+			return {{.defaultValue}}, err
 		}
-		{{ .dst }} += size`
+		{{ .dst }} += sszSize`
 
 		check := true
 		if v.isListElem() {
@@ -79,16 +79,17 @@ func (v *Value) sizeContainer(name string, start bool) string {
 			check = false
 		}
 		return execTmpl(tmpl, map[string]interface{}{
-			"name":  v.name,
-			"dst":   name,
-			"obj":   v.objRef(),
-			"check": check,
+			"name":         v.name,
+			"dst":          name,
+			"obj":          v.objRef(),
+			"check":        check,
+			"defaultValue": defaultValue,
 		})
 	}
 	out := []string{}
 	for indx, v := range v.o {
 		if !v.isFixed() {
-			out = append(out, fmt.Sprintf("// Field (%d) '%s'\n%s", indx, v.name, v.size(name)))
+			out = append(out, fmt.Sprintf("// Field (%d) '%s'\n%s", indx, v.name, v.size(name, defaultValue)))
 		}
 	}
 	return strings.Join(out, "\n\n")
@@ -96,10 +97,10 @@ func (v *Value) sizeContainer(name string, start bool) string {
 
 // 'name' is the name of target variable we assign the size too. We also use this function
 // during marshalling to figure out the size of the offset
-func (v *Value) size(name string) string {
+func (v *Value) size(name string, defaultValue string) string {
 	if v.isFixed() {
 		if v.t == TypeContainer {
-			return v.sizeContainer(name, false)
+			return v.sizeContainer(name, false, defaultValue)
 		}
 		if v.fixedSize() == 1 {
 			return name + "++"
@@ -109,7 +110,7 @@ func (v *Value) size(name string) string {
 
 	switch v.t {
 	case TypeContainer, TypeReference:
-		return v.sizeContainer(name, false)
+		return v.sizeContainer(name, false, defaultValue)
 
 	case TypeBitList:
 		fallthrough
@@ -132,7 +133,7 @@ func (v *Value) size(name string) string {
 		return execTmpl(tmpl, map[string]interface{}{
 			"name":    v.name,
 			"size":    name,
-			"dynamic": v.e.size(name),
+			"dynamic": v.e.size(name, defaultValue),
 		})
 
 	default:

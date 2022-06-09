@@ -116,7 +116,7 @@ func (v *Value) marshalList() string {
 
 	str += execTmpl(tmpl, map[string]interface{}{
 		"name":    v.name,
-		"size":    v.e.size("offset"),
+		"size":    v.e.size("offset", "nil"),
 		"marshal": v.e.marshal(),
 	})
 	return str
@@ -169,7 +169,7 @@ func (v *Value) marshalContainer(start bool) string {
 			str = fmt.Sprintf("// Field (%d) '%s'\n%s\n", indx, i.name, i.marshal())
 		} else {
 			// write the offset
-			str = fmt.Sprintf("// Offset (%d) '%s'\ndst = ssz.WriteOffset(dst, offset)\n%s\n", indx, i.name, i.size("offset"))
+			str = fmt.Sprintf("// Offset (%d) '%s'\ndst = ssz.WriteOffset(dst, offset)\n%s\n", indx, i.name, i.size("offset", "nil"))
 			offset += i.fixedSize()
 		}
 		out = append(out, str)
