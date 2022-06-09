@@ -13,7 +13,7 @@ import (
 // that field to the size. It is up to other methods like marshal to fail on that scenario.
 func (e *env) size(name string, v *Value) string {
 	tmpl := `// SizeSSZ returns the ssz encoded size in bytes for the {{.name}} object
-	func (:: *{{.name}}) SizeSSZ() (size int) {
+	func (:: *{{.name}}) SizeSSZ() (size int, err error) {
 		size = {{.fixed}}{{if .dynamic}}
 
 		{{.dynamic}}
@@ -64,7 +64,12 @@ func (v *Value) sizeContainer(name string, start bool) string {
 		tmpl := `{{if .check}} if ::.{{.name}} == nil {
 			::.{{.name}} = new({{.obj}})
 		}
-		{{end}} {{ .dst }} += ::.{{.name}}.SizeSSZ()`
+		{{end}}
+		size, err := ::.{{.name}}.SizeSSZ()
+		if err != nil {
+			return nil, err
+		}
+		{{ .dst }} += size`
 
 		check := true
 		if v.isListElem() {
