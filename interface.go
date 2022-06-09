@@ -4,7 +4,7 @@ package ssz
 type Marshaler interface {
 	MarshalSSZTo(dst []byte) ([]byte, error)
 	MarshalSSZ() ([]byte, error)
-	SizeSSZ() int
+	SizeSSZ() (int, error)
 }
 
 // Unmarshaler is the interface implemented by types that can unmarshal a SSZ description of themselves
