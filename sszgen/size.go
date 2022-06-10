@@ -15,6 +15,7 @@ func (e *env) size(name string, v *Value) string {
 	tmpl := `// SizeSSZ returns the ssz encoded size in bytes for the {{.name}} object
 	func (:: *{{.name}}) SizeSSZ() (size int, err error) {
 		size = {{.fixed}}{{if .dynamic}}
+		var sszSize int
 
 		{{.dynamic}}
 		{{end}}
@@ -65,7 +66,7 @@ func (v *Value) sizeContainer(name string, start bool, defaultValue string) stri
 			::.{{.name}} = new({{.obj}})
 		}
 		{{end}}
-		sszSize, err := ::.{{.name}}.SizeSSZ()
+		sszSize, err = ::.{{.name}}.SizeSSZ()
 		if err != nil {
 			return {{.defaultValue}}, err
 		}
