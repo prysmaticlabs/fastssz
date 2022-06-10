@@ -16,8 +16,8 @@ func (e *env) marshal(name string, v *Value) string {
 
 	// MarshalSSZTo ssz marshals the {{.name}} object to a target array	
 	func (:: *{{.name}}) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+		var sszSize int; _ = sszSize // get around potential unused variable error
 		dst = buf
-		var sszSize int
 		{{.offset}}
 		{{.marshal}}
 		return

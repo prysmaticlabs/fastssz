@@ -14,8 +14,8 @@ import (
 func (e *env) size(name string, v *Value) string {
 	tmpl := `// SizeSSZ returns the ssz encoded size in bytes for the {{.name}} object
 	func (:: *{{.name}}) SizeSSZ() (size int, err error) {
+		var sszSize int; _ = sszSize // get around potential unused variable error
 		size = {{.fixed}}{{if .dynamic}}
-		var sszSize int
 
 		{{.dynamic}}
 		{{end}}
