@@ -485,21 +485,11 @@ func (h *Hasher) merkleizeImpl(dst []byte, input []byte, limit uint64) []byte {
 }
 
 func merkleizeInput(input []byte, limit uint64) []byte {
-	chunkCount := (len(input) + 31) / 32
-	chunks := make([][32]byte, chunkCount)
-	for i, j := 0, 0; j < chunkCount; i, j = i+32, j+1 {
-		if j == chunkCount-1 {
-			copy(chunks[j][:], input[i:])
-		} else {
-			copy(chunks[j][:], input[i:i+32])
-		}
-	}
-
 	var result [32]byte
 	if limit == 0 {
-		result = merkleizeVector(chunks, uint64(chunkCount))
+		result = merkleizeVector(input, uint64((len(input)+31)/32))
 	} else {
-		result = merkleizeVector(chunks, limit)
+		result = merkleizeVector(input, limit)
 	}
 
 	return result[:]
@@ -507,28 +497,32 @@ func merkleizeInput(input []byte, limit uint64) []byte {
 
 // MerkleizeVector uses our optimized routine to hash a list of 32-byte
 // elements.
-func merkleizeVector(elements [][32]byte, length uint64) [32]byte {
+func merkleizeVector(elements []byte, length uint64) [32]byte {
 	dep := depth(length)
 	// Return zerohash at depth
 	if len(elements) == 0 {
 		return zeroHashesRaw[dep]
 	}
 	for i := uint8(0); i < dep; i++ {
-		layerLen := len(elements)
+		layerLen := (len(elements) + 31) / 32
 		oddNodeLength := layerLen%2 == 1
 		if oddNodeLength {
 			zerohash := zeroHashesRaw[i]
-			elements = append(elements, zerohash)
+			elements = append(elements, zerohash[:]...)
+			layerLen += 1
 		}
-		outputLen := len(elements) / 2
+		outputLen := layerLen / 2
 		// gohashtree concurrently overwrites elements
 		err := gohashtree.Hash(elements, elements)
 		if err != nil {
 			panic(err)
 		}
-		elements = elements[:outputLen]
+		elements = elements[:outputLen*32]
 	}
-	return elements[0]
+
+	var result [32]byte
+	copy(result[:], elements[:32])
+	return result
 }
 
 // Depth retrieves the appropriate depth for the provided trie size.
