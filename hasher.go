@@ -413,7 +413,10 @@ func (h *Hasher) doHash(dst []byte, a []byte, b []byte) []byte {
 }
 
 func (h *Hasher) merkleizeImpl(dst []byte, input []byte, limit uint64) []byte {
-	count := uint64(len(input) / 32)
+	// count is the number of 32 byte chunks from the input, after right-padding
+	// with zeroes to the next multiple of 32 bytes when the input is not aligned
+	// to a multiple of 32 bytes.
+	count := uint64((len(input) + 31) / 32)
 	if limit == 0 {
 		limit = count
 	} else if count > limit {
