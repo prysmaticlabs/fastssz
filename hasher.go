@@ -2,6 +2,7 @@ package ssz
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash"
 	"math/bits"
@@ -14,9 +15,9 @@ import (
 var (
 	// ErrIncorrectByteSize means that the byte size is incorrect
 	ErrIncorrectByteSize = fmt.Errorf("incorrect byte size")
-
 	// ErrIncorrectListSize means that the size of the list is incorrect
 	ErrIncorrectListSize = fmt.Errorf("incorrect list size")
+	ErrRootSizeInvalid   = errors.New("root must be 32 bytes")
 )
 
 var zeroHashes [65][32]byte
@@ -295,7 +296,7 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 // HashRoot creates the hash final hash root
 func (h *Hasher) HashRoot() (res [32]byte, err error) {
 	if len(h.buf) != 32 {
-		err = fmt.Errorf("expected 32 byte size")
+		err = ErrRootSizeInvalid
 		return
 	}
 	copy(res[:], h.buf)

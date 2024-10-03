@@ -38,8 +38,12 @@ func UnmarshalBool(src []byte) bool {
 }
 
 var (
-	ErrOffsetExceedsSize = errors.New("offset exceeds size of buffer")
-	ErrOffsetOrdering    = errors.New("offset is less than previous offset")
+	ErrOffsetExceedsSize           = errors.New("offset exceeds size of buffer")
+	ErrOffsetOrdering              = errors.New("offset is less than previous offset")
+	ErrDynamicLengthTooShort       = errors.New("buffer too small to hold an offset")
+	ErrDynamicLengthNotOffsetSized = errors.New("list offsets must be multiples of the offset size (4)")
+	ErrDynamicLengthExceedsMax     = errors.New("list length longer than ssz max length for the type")
+	ErrInvalidEncoding             = errors.New("invalid encoding")
 )
 
 // ValidateBitlist validates that the bitlist is correct
@@ -80,16 +84,18 @@ func DecodeDynamicLength(buf []byte, maxSize int) (int, error) {
 		return 0, nil
 	}
 	if len(buf) < 4 {
-		return 0, fmt.Errorf("not enough data")
+		return 0, ErrDynamicLengthTooShort
 	}
-	offset := binary.LittleEndian.Uint32(buf[:4])
-	length, ok := DivideInt(int(offset), bytesPerLengthOffset)
-	if !ok {
-		return 0, fmt.Errorf("bad")
+	o := int(binary.LittleEndian.Uint32(buf))
+	if o%bytesPerLengthOffset != 0 || o == 0 {
+		return 0, ErrDynamicLengthNotOffsetSized
 	}
+
+	length := o / bytesPerLengthOffset
 	if length > maxSize {
-		return 0, fmt.Errorf("too big for the list")
+		return 0, ErrDynamicLengthExceedsMax
 	}
+
 	return length, nil
 }
 
@@ -146,10 +152,10 @@ func UnmarshalDynamic(src []byte, length int, f func(indx int, b []byte) error) 
 func DivideInt2(a, b, max int) (int, error) {
 	num, ok := DivideInt(a, b)
 	if !ok {
-		return 0, fmt.Errorf("xx")
+		return 0, fmt.Errorf("a is not evenly divisble by b")
 	}
 	if num > max {
-		return 0, fmt.Errorf("yy")
+		return 0, fmt.Errorf("a/b is greater than max")
 	}
 	return num, nil
 }
@@ -197,4 +203,14 @@ func safeReadOffset(buf []byte) (uint64, []byte, error) {
 	}
 	offset := ReadOffset(buf)
 	return offset, buf[4:], nil
+}
+
+func DecodeBool(src []byte) (bool, error) {
+	if src[0] == 1 {
+		return true, nil
+	}
+	if src[0] == 0 {
+		return false, nil
+	}
+	return false, ErrInvalidEncoding
 }
