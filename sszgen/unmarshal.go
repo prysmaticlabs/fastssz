@@ -95,11 +95,18 @@ func (v *Value) unmarshal(dst string) string {
 		return v.unmarshalList()
 
 	case TypeBool:
-		return fmt.Sprintf("::.%s = ssz.UnmarshalBool(%s)", v.name, dst)
+		return unbTmpl(v.name, dst)
 
 	default:
 		panic(fmt.Errorf("unmarshal not implemented for type %d", v.t))
 	}
+}
+
+func unbTmpl(name, dst string) string {
+	return fmt.Sprintf(`::.%s, err = ssz.DecodeBool(%s)
+	    if err != nil {
+		return err
+	}`, name, dst)
 }
 
 func (v *Value) unmarshalList() string {
